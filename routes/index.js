@@ -18,10 +18,21 @@ const readTags = (res, deviceId) => {
     if (err) {
       res.send(err.message);
     } else {
-      res.render('twindata', {
+      let lu = twin.tags.subscriptionTraffic.lastLu;
+      delete lu['status']
+      delete lu['gprsStatus']
+      let gprs = twin.tags.subscriptionTraffic.gprs;
+      delete twin.tags.subscriptionTraffic['lastLu'];
+      delete twin.tags.subscriptionTraffic['gprs'];
+
+      let data = {
         sm: twin.tags.subscriptionData,
-        ST: twin.tags.subscriptionData
-      });
+        st: twin.tags.subscriptionTraffic,
+        lastLu: lu,
+        gprs: gprs
+      }
+      console.log(data)
+      res.render('twindata', data);
     }
   });
 }

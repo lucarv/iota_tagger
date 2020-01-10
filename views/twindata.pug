@@ -8,19 +8,20 @@ block content
         .panel.panel-default
             .panel-heading SUBSCRIPTION MANAGEMENT TAGS
             .panel-body    
-                table.table.table-hover
-                    thead
-                        tr
-                            th Tag Name
-                            th Tag Value
-                    tbody
-                        each val, index in sm
+                if sm
+                    table.table.table-hover
+                        thead
                             tr
-                                td= index 
-                                td= val      
+                                th Tag Name
+                                th Tag Value
+                        tbody
+                            each val, index in sm
+                                tr
+                                    td= index 
+                                    td= val      
         .panel.panel-default
             .panel-heading SUBSCRIPTION TRAFFIC TAGS
-            .panel-body    
+            .panel-body   
                 table.table.table-hover
                     thead
                         tr
@@ -30,8 +31,36 @@ block content
                         each val, index in st
                             tr
                                 td= index 
-                                td= val    
-                br
+                                td= val 
+        .panel.panel-default
+            .panel-heading GPRS CONSUMPTION TAGS
+            .panel-body 
+                table.table.table-hover
+                    thead
+                        tr
+                            th Tag Name
+                            th Tag Value
+                    tbody    
+                        each val, index in gprs
+                            tr
+                                td= index 
+                                td= val 
+        .panel.panel-default
+            .panel-heading LAST LOCATION UPDATE TAGS
+            .panel-body 
+                table.table.table-hover
+                    thead
+                        tr
+                            th Tag Name
+                            th Tag Value
+                    tbody
+                        each val, index in lastLu
+                            tr
+                                td= index 
+                                td= val          
+        .panel.panel-default
+            .panel-heading
+            .panel-body   
                 form(action='/', method='get')
                     fieldset
                         .form-group.row
