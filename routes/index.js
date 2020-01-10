@@ -59,7 +59,7 @@ const options = {
   hasTimeStamp: false,
   hasTokenCreated: false
 };
-const wsSecurity = new soap.WSSecurity('carlos', 'Eric123456', options)
+const wsSecurity = new soap.WSSecurity(process.env.USER, process.env.PASSWD, options)
 var customerno;
 
 /*
