@@ -1,0 +1,52 @@
+{
+    "SubscriptionManagement": [
+        "pin1",
+        "pin2",
+        "puk1",
+        "puk2",
+        "accessControlClass",
+        "roamProfileName",
+        "deviceTerminalType",
+        "simCardDescription",
+        "simSpecification",
+        "priceProfileName",
+        "priceProfileDesc:",
+        "productOfferName",
+        "pdpContextProfileName",
+        "tenantId",
+        "userProfileId",
+        "firstActivationDate",
+        "gprs",
+        "lte",
+        "smsMo",
+        "smsMt",
+        "csd",
+        "voice",
+        "clip",
+        "consumerConnectivity",
+        "apns",
+        "installationDate",
+        "triggerPackage",
+        "lastSubscriptionDateChange",
+        "moveToPermitted",
+        "freezeDuration",
+        "chargeCodeForPPMove",
+        "chargeCodeNonPPMove",
+        "customerName",
+        "priceProfileDesc",
+        "operatorId"
+    ],
+    "AggregatedTraffic": [
+        "smsVolume"
+    ],
+    "SubscriptionTraffic": [
+        "returnCode",
+        "imsi",
+        "msisdn",
+        "imei",
+        "lastSmsError",
+        "customerNo",
+        "smsMo",
+        "smsMt"
+    ]
+}

@@ -1,0 +1,39 @@
+extends layout
+
+block content  
+        .panel.panel-default
+            .panel-heading extends layout
+
+block content  
+        .panel.panel-default
+            .panel-heading SUBSCRIPTION MANAGEMENT TAGS
+            .panel-body    
+                table.table.table-hover
+                    thead
+                        tr
+                            th Tag Name
+                            th Tag Value
+                    tbody
+                        each val, index in sm
+                            tr
+                                td= index 
+                                td= val      
+        .panel.panel-default
+            .panel-heading SUBSCRIPTION TRAFFIC TAGS
+            .panel-body    
+                table.table.table-hover
+                    thead
+                        tr
+                            th Tag Name
+                            th Tag Value
+                    tbody
+                        each val, index in st
+                            tr
+                                td= index 
+                                td= val    
+                br
+                form(action='/', method='get')
+                    fieldset
+                        .form-group.row
+                        .col-xs-2
+                            button.btn.btn-primary(type='submit') Return                 
