@@ -1,13 +1,17 @@
 // Utilities
 require('dotenv').config()
-const getSwedishDate = require('../lib/util').getSwedishDate;
+// const getSwedishDate = require('../lib/util').getSwedishDate;
 
 // IoT HUB
 var Registry = require('azure-iothub').Registry;
 var connectionString = process.env.CONNECTION_STRING;
-
 var registry = Registry.fromConnectionString(connectionString);
 
+const getImsiForDevice = (deviceId) => {
+  console.log(imsi_cache)
+  const found = imsi_cache.find(element => element.deviceId == deviceId);
+  return found.imsi;
+} 
 
 const readTags = (res, deviceId) => {
   registry.getTwin(deviceId, function (err, twin) {
@@ -68,7 +72,7 @@ const options = {
   hasTokenCreated: false
 };
 const wsSecurity = new soap.WSSecurity(process.env.USER, process.env.PASSWD, options)
-var customerno;
+var imsi_cache = [];
 
 /*
  * fetch subscription management tags
@@ -80,9 +84,10 @@ const fetch = (res, deviceId) => {
       res.send('ERROR WHEN GETTING SUBSCRIPTION MANAGMENT WSDL: ' + err.message)
     } else {
       client.setSecurity(wsSecurity);
+      let id = getImsiForDevice(deviceId);
       let args = {
         "resource": {
-          id: deviceId,
+          id,
           type: 'imsi'
         }
       }
@@ -96,13 +101,12 @@ const fetch = (res, deviceId) => {
             delete subscriptionData[remove.SubscriptionManagement[i]]
           }
           let tags = {
-            "subscriptionData": null,
-            "subscriptionTraffic": null,
-            "trafficData": null
+            "subscriptionData": 0,
+            "subscriptionTraffic": 0,
+            "trafficData": 0
           };
           tags.subscriptionData = subscriptionData;
           // get traffic data only after this because we need the customer number
-          customerno = subscriptionData.customerNo;
           getST(res, deviceId, tags);
         }
       });
@@ -111,9 +115,10 @@ const fetch = (res, deviceId) => {
 }
 
 
-/*
+/* ---------------------------------------------------------------------------------
  * fetch aggregated traffic tags
- */
+ * currently not used
+ * ----------------------------------------------------------------------------------
 
 const getTD = (res, deviceId) => {
   soap.createClient(at_url, function (err, client) {
@@ -133,23 +138,24 @@ const getTD = (res, deviceId) => {
           console.error('ERROR WHEN QUERYING TRAFFIC DATA: ' + err.message);
           res.send('ERROR WHEN QUERYING TRAFFIC DATA: ' + err.message);
         } else {
-          /*
+          
           let trafficData = result.trafficUsage[0];
           for (var i = 0; i < remove.AggregatedTraffic.length; i++) {
             delete trafficData[remove.AggregatedTraffic[i]]
           }
           tags.trafficData = trafficData;
-          */
           updateTags(tags, res, deviceId);
         }
       });
     }
   });
 }
+ * --------------------------------------------------------------------------------- 
+ */
 
-
-/*
+/* ---------------------------------------------------------------------------------
  * fetch subscription traffic tags
+ * --------------------------------------------------------------------------------- 
  */
 
 const getST = (res, deviceId, tags) => {
@@ -205,7 +211,7 @@ router.get('/tags', function (req, res, next) {
 });
 
 router.post('/', function (req, res, next) {
-  deviceId = req.body.deviceId;
+  let deviceId = req.body.deviceId;
   if (!deviceId) {
     res.send('need device id');
   } else {
@@ -214,14 +220,22 @@ router.post('/', function (req, res, next) {
 });
 
 router.post('/imsi', function (req, res, next) {
+  let imsi = req.body.imsi
+  let deviceId = req.body.deviceId;
+
   if (!deviceId) {
     res.send('need device id');
   } else {
     let tags = {
-      "subscriptionData": null
+      "subscriptionData": 0
     };
-    tags.subscriptionData.imsi = req.body.imsi;
-    updateTags(tags, res, deviceId);
+    tags.subscriptionData.imsi = imsi;
+    //updateTags(tags, res, deviceId);
+    let map = {deviceId, imsi}
+    console.log(map)
+    imsi_cache.push(map);
+    res.render('tags');
+
   }
 });
 
