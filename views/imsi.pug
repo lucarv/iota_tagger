@@ -1,0 +1,17 @@
+extends layout
+
+block content
+    .panel.panel-default
+        .panel-heading Assign IMSI
+        .panel-body 
+            form(action='/', method='post')
+                fieldset
+                    .form-group.row
+                        .col-xs-12
+                            input.form-control(type='text', name='imsi', placeholder='IMSI Number') 
+                    .form-group.row
+                        .col-xs-12
+                            input.form-control(type='text', name='deviceId', placeholder='IoT Hub device ID')
+                    .form-group.row
+                        .col-xs-2
+                            button.btn.btn-primary(type='submit') Submit 

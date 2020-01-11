@@ -7,11 +7,7 @@ var Registry = require('azure-iothub').Registry;
 var connectionString = process.env.CONNECTION_STRING;
 
 var registry = Registry.fromConnectionString(connectionString);
-var tags = {
-  "subscriptionData": null,
-  "subscriptionTraffic": null,
-  "trafficData": null
-};
+
 
 const readTags = (res, deviceId) => {
   registry.getTwin(deviceId, function (err, twin) {
@@ -60,6 +56,7 @@ const updateTags = (tags, res, deviceId) => {
 // IOTA SOPA APIS
 const soap = require('soap');
 const remove = require('../lib/params.json');
+
 const sm_url = process.env.SUBSCRIPTION_MANAGEMENT_URL;
 const at_url = process.env.AGGREGATED_TRAFFIC_URL;
 const st_url = process.env.SUBSCRIPTION_TRAFFIC_URL;
@@ -98,10 +95,15 @@ const fetch = (res, deviceId) => {
           for (var i = 0; i < remove.SubscriptionManagement.length; i++) {
             delete subscriptionData[remove.SubscriptionManagement[i]]
           }
+          let tags = {
+            "subscriptionData": null,
+            "subscriptionTraffic": null,
+            "trafficData": null
+          };
           tags.subscriptionData = subscriptionData;
           // get traffic data only after this because we need the customer number
           customerno = subscriptionData.customerNo;
-          getST(res, deviceId);
+          getST(res, deviceId, tags);
         }
       });
     }
@@ -150,7 +152,7 @@ const getTD = (res, deviceId) => {
  * fetch subscription traffic tags
  */
 
-const getST = (res, deviceId) => {
+const getST = (res, deviceId, tags) => {
   soap.createClient(st_url, function (err, client) {
     if (err) console.error(err)
     else {
@@ -185,10 +187,17 @@ const getST = (res, deviceId) => {
 const express = require('express');
 const router = express.Router();
 
-
 /* GET home page. */
 router.get('/', function (req, res, next) {
   res.render('index');
+});
+
+router.get('/imsi', function (req, res, next) {
+  res.render('imsi');
+});
+
+router.get('/tagsmgmt', function (req, res, next) {
+  res.render('tags');
 });
 
 router.get('/tags', function (req, res, next) {
@@ -208,7 +217,11 @@ router.post('/imsi', function (req, res, next) {
   if (!deviceId) {
     res.send('need device id');
   } else {
+    let tags = {
+      "subscriptionData": null
+    };
     tags.subscriptionData.imsi = req.body.imsi;
+    updateTags(tags, res, deviceId);
   }
 });
 

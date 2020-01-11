@@ -2,26 +2,5 @@ extends layout
 
 block content
     .panel.panel-default
-      .panel-heading Update Device Tags
+      .panel-heading IoT Accelerator Demo UI
       .panel-body 
-        form(action='/', method='post')
-          fieldset
-            .form-group.row
-              .col-xs-6
-                input.form-control(type='text', name='deviceId', plceholder='IMSI Number') 
-              .col-xs-2
-                button.btn.btn-primary(type='submit') Submit     
-    .panel.panel-default
-      .panel-heading Fetch Device Tags
-      .panel-body 
-        form(action='/tags', method='get')
-          fieldset
-            .form-group.row
-              .col-xs-6
-                input.form-control(type='text', name='deviceId', plceholder='IMSI Number') 
-              .col-xs-2
-                button.btn.btn-primary(type='submit') Submit  
-            .form-group-row
-              .col-xs-12
-                p #{tags}
-
