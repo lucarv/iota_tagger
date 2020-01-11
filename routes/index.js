@@ -204,4 +204,12 @@ router.post('/', function (req, res, next) {
   }
 });
 
+router.post('/imsi', function (req, res, next) {
+  if (!deviceId) {
+    res.send('need device id');
+  } else {
+    tags.subscriptionData.imsi = req.body.imsi;
+  }
+});
+
 module.exports = router;
