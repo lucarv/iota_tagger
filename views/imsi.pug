@@ -13,5 +13,18 @@ block content
                         .col-xs-12
                             input.form-control(type='text', name='deviceId', placeholder='IoT Hub device ID')
                     .form-group.row
+                        .col-xs-12
+                            select.form-control(name='type')
+                                option(value='central') IoT Central
+                                |     
+                                option(value='hub') IoT Hub
+                                |   
+                    .form-group.row
                         .col-xs-2
                             button.btn.btn-primary(type='submit') Submit 
+    .panel.panel-default
+        .panel-heading Status Bar
+        .panel-body 
+            block content
+                pre #{status}
+
