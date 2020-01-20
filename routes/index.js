@@ -30,6 +30,7 @@ const getImsiForDevice = (deviceId) => {
 };
 
 const readTags = (res, deviceId) => {
+	console.log(deviceId)
 	registry.getTwin(deviceId, function(err, twin) {
 		if (err) {
 			res.render('error', {
@@ -89,10 +90,12 @@ const updateTags = (tags, res, deviceId, type) => {
 		let url = '/api/preview/devices/' + deviceId + '/cloudProperties';
 		let IMSI = tags.subscriptionData.imsi;
 		let IMEI = tags.subscriptionData.imei;
+		let CustomerId = tags.subscriptionData.customerNo;
 		console.log(tags);
 		let data = {
 			IMSI,
 			IMEI,
+			CustomerId
 		};
 		//[, ]
 		let options = {
@@ -111,7 +114,6 @@ const updateTags = (tags, res, deviceId, type) => {
 				});
 			})
 			.catch(function(error) {
-				copnsole.log(error);
 				var message = '';
 				switch (error.response.status) {
 					case 404:
@@ -153,8 +155,7 @@ const wsSecurity = new soap.WSSecurity(process.env.IOTA_USER, process.env.IOTA_P
  * fetch subscription management tags
  */
 const getIotaData = (res, deviceId) => {
-	console.log(deviceId);
-	soap.createClient(sm_url, function(err, client) {
+		soap.createClient(sm_url, function(err, client) {
 		if (err) {
 			res.render('error', {
 				header: 'ERROR WHEN GETTING SUBSCRIPTION MANAGMENT WSDL',
@@ -162,12 +163,13 @@ const getIotaData = (res, deviceId) => {
 			});
 		} else {
 			client.setSecurity(wsSecurity);
-			let id = getImsiForDevice(deviceId).imsi;
-			console.log(id);
+			let found = getImsiForDevice(deviceId);
+			let id = found.imsi;
+			let type = found.type;
 
 			let args = {
 				resource: {
-					id: id,
+					id,
 					type: 'imsi',
 				},
 			};
@@ -192,7 +194,7 @@ const getIotaData = (res, deviceId) => {
 					tags.subscriptionData = subscriptionData;
 					console.log('got SIM data');
 					// get traffic data only after this because we need the customer number
-					getST(res, deviceId, tags);
+					getST(res, deviceId, tags, id, type);
 				}
 			});
 		}
@@ -242,18 +244,15 @@ const getTD = (res, deviceId) => {
  * ---------------------------------------------------------------------------------
  */
 
-const getST = (res, deviceId, tags) => {
+const getST = (res, deviceId, tags, id, type) => {
 	soap.createClient(st_url, function(err, client) {
 		if (err) {
 			console.error(err);
 			res.render('dummy', {
 				title: 'ERROR WHEN QUERYING SIM RESOURCE',
 			});
-
-			//res.render('error', {'header': 'ERROR WHEN QUERYING SIM RESOURCE', 'message': err.message});
 		} else {
 			client.setSecurity(wsSecurity);
-			let id = getImsiForDevice(deviceId).imsi;
 
 			let args = {
 				resource: {
@@ -264,7 +263,6 @@ const getST = (res, deviceId, tags) => {
 
 			client.query(args, function(err, result) {
 				if (err) {
-					//res.send('ERROR WHEN QUERYING SUBSCRIPTION RESOURCE: ' + err.message);
 					res.render('error', {
 						header: 'ERROR WHEN QUERYING SUBSCRIPTION RESOURCE',
 						message: err.message,
@@ -277,7 +275,7 @@ const getST = (res, deviceId, tags) => {
 					}
 					tags.subscriptionTraffic = subscriptionTraffic;
 					console.log('got subscription data');
-					updateTags(tags, res, deviceId);
+					updateTags(tags, res, deviceId, type);
 				}
 			});
 		}
@@ -319,7 +317,7 @@ router.get('/tags', function(req, res, next) {
 				message: 'Device is in IoT Central. Use IoT Central App to read tags',
 			});
 		} else {
-			readTags(deviceId);
+			readTags(res, deviceId);
 		}
 	}
 });
