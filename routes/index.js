@@ -298,18 +298,8 @@ router.delete('/device/:deviceId', function(req, res, next) {
 				res.status(500);
 				res.send('file system error when updating cache');
 			} else {
-				let subscriptionData = {
-					imsi,
-				};
-				let tags = {
-					subscriptionData,
-				};
-				imsi_cache.push({
-					deviceId,
-					imsi: null,
-					type,
-				});
-				updateTags(tags, res, deviceId, type); // remove imsi from twin tag
+				res.status(404);
+				res.send('imsi removed from device');				
 			}
 		});
 	}
