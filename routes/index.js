@@ -12,75 +12,52 @@ jsonfile
 	.readFile(fileName)
 	.then(obj => {
 		imsi_cache = obj;
+		let ts = new Date();
+
+		console.log(`${ts}: Currently cached devices .....`);	
 		console.log(imsi_cache);
+		console.log('\n');
 	})
-	.catch(error => console.error(error)); // const getSwedishDate = require('../lib/util').getSwedishDate;
+	.catch(error => console.error(error));
+
+// const getSwedishDate = require('../lib/util').getSwedishDate;
 
 // IoT HUB
 var Registry = require('azure-iothub').Registry;
 var connectionString = process.env.CONNECTION_STRING;
 var registry = Registry.fromConnectionString(connectionString);
 
-const getImsiForDevice = (deviceId) => {
-	console.log(deviceId)
+const getImsiForDevice = deviceId => {
 	const found = imsi_cache.find(element => element.deviceId == deviceId);
-	console.log(found)
 	if (found) return found;
 	else return false;
 };
 
-const readTags = (res, deviceId) => {
-	console.log(deviceId)
-	registry.getTwin(deviceId, function(err, twin) {
-		if (err) {
-			res.render('error', {
-				header: 'ERROR READING TWIN TAGS',
-				message: err.name,
-			});
-		} else {
-			console.log(twin.tags);
-			let lu = twin.tags.subscriptionTraffic.lastLu;
-			delete lu['status'];
-			delete lu['gprsStatus'];
-			let gprs = twin.tags.subscriptionTraffic.gprs;
-			delete twin.tags.subscriptionTraffic['lastLu'];
-			delete twin.tags.subscriptionTraffic['gprs'];
-
-			let data = {
-				sm: twin.tags.subscriptionData,
-				st: twin.tags.subscriptionTraffic,
-				lastLu: lu,
-				gprs: gprs,
-			};
-			res.render('twindata', data);
-		}
-	});
-};
-
 const updateTags = (tags, res, deviceId, type) => {
 	if (type == 'hub') {
-		console.log(`will write ${JSON.stringify(tags)} to iot hub`);
+		let ts = new Date();
+		console.log(`${ts}: will write ${JSON.stringify(tags)} to iot hub`);
 		registry.getTwin(deviceId, function(err, twin) {
 			if (err) {
-				res.render('error', {
-					header: 'ERROR FETCHING TWIN DOCUMENT',
-					message: err.name,
-				});
+				console.log('-----------------------------------------------------------------------')
+				console.log(err)
+				console.log('-----------------------------------------------------------------------')
+				res.status(404);
+				res.send('device not provisioned in iot hub');
 			} else {
 				let twinPatch = {
 					tags,
 				};
 				twin.update(twinPatch, function(err, twin) {
 					if (err) {
-						res.render('error', {
-							header: 'ERROR READING TWIN TAGS',
-							message: err.name,
-						});
+						console.log('-----------------------------------------------------------------------')
+						console.log(err)
+						console.log('-----------------------------------------------------------------------')						
+						res.status(500);
+						res.send('error reading twin tags');
 					} else {
-						console.log('updated twin tags');
-						res.render('imsi', {
-							status: 'SUCCESSFULLY ASSOCIATED IMSI TO IOT DEVICE',
-						});
+						res.status(200);
+						res.send('ok');
 					}
 				});
 			}
@@ -91,51 +68,40 @@ const updateTags = (tags, res, deviceId, type) => {
 		let IMSI = tags.subscriptionData.imsi;
 		let IMEI = tags.subscriptionData.imei;
 		let CustomerId = tags.subscriptionData.customerNo;
-		console.log(tags);
+		let ts = new Date();
+		console.log(`${ts}: will write ${JSON.stringify(tags)} to IoT Central`);
+
 		let data = {
 			IMSI,
 			IMEI,
-			CustomerId
+			CustomerId,
 		};
-		//[, ]
 		let options = {
 			url: url,
 			method: 'put',
 			timeout: 5000,
-			data,
+			data
 		};
 
 		axios
 			.request(options)
 			.then(function(response) {
-				console.log(response);
-				res.render('imsi', {
-					status: `SUCCESSFULLY SET CLOUD PROPERTIES OF [${deviceId}]`,
-				});
+				res.status(200);
+				res.send('ok');
 			})
 			.catch(function(error) {
-				var message = '';
-				switch (error.response.status) {
-					case 404:
-						message = `Device: [${deviceId}] does not exist`;
-						break;
-					case 401:
-						message = 'invalid token';
-						break;
-					default:
-						message = 'unknown error';
-						break;
-				}
-				res.render('error', {
-					header: 'ERROR SETTING CLOUD PROPERTIES',
-					message: message,
-				});
+				console.log('-----------------------------------------------------------------------')
+				console.log(error)
+				console.log('-----------------------------------------------------------------------')
+				res.status(error.response.status);
+				res.send(error.response.data.error.message);
 			});
 	}
 };
-//
 
+//
 // IOTA SOPA APIS
+//
 const soap = require('soap');
 const remove = require('../lib/params.json');
 
@@ -154,33 +120,25 @@ const wsSecurity = new soap.WSSecurity(process.env.IOTA_USER, process.env.IOTA_P
 /*
  * fetch subscription management tags
  */
-const getIotaData = (res, deviceId) => {
-		soap.createClient(sm_url, function(err, client) {
+const getIotaData = (res, deviceId, id, type) => {
+	soap.createClient(sm_url, function(err, client) {
 		if (err) {
-			res.render('error', {
-				header: 'ERROR WHEN GETTING SUBSCRIPTION MANAGMENT WSDL',
-				message: err.message,
-			});
+			console.log('-----------------------------------------------------------------------')
+			console.log(err)
+			console.log('-----------------------------------------------------------------------')			
+			res.status(500)
+			res.send(err.message);
 		} else {
 			client.setSecurity(wsSecurity);
-			let found = getImsiForDevice(deviceId);
-			let id = found.imsi;
-			let type = found.type;
-
-			let args = {
-				resource: {
-					id,
-					type: 'imsi',
-				},
-			};
+			let args = { resource: { id, type: 'imsi' } };
 
 			client.QuerySimResource(args, function(err, result) {
 				if (err) {
-					//res.send('ERROR WHEN QUERYING SIM RESOURCE: ' + err.message);
-					res.render('error', {
-						header: 'ERROR WHEN QUERYING SIM RESOURCE',
-						message: err.message,
-					});
+					console.log('-----------------------------------------------------------------------')
+					console.log(err)
+					console.log('-----------------------------------------------------------------------')					
+					res.status(500)
+					res.send(err.message);
 				} else {
 					subscriptionData = result.SimResource;
 					for (var i = 0; i < remove.SubscriptionManagement.length; i++) {
@@ -192,7 +150,6 @@ const getIotaData = (res, deviceId) => {
 						trafficData: 0,
 					};
 					tags.subscriptionData = subscriptionData;
-					console.log('got SIM data');
 					// get traffic data only after this because we need the customer number
 					getST(res, deviceId, tags, id, type);
 				}
@@ -247,26 +204,23 @@ const getTD = (res, deviceId) => {
 const getST = (res, deviceId, tags, id, type) => {
 	soap.createClient(st_url, function(err, client) {
 		if (err) {
-			console.error(err);
-			res.render('dummy', {
-				title: 'ERROR WHEN QUERYING SIM RESOURCE',
-			});
+			console.log('-----------------------------------------------------------------------')
+			console.log(err)
+			console.log('-----------------------------------------------------------------------')			
+			res.status(500);
+			res.send(err.message);
 		} else {
 			client.setSecurity(wsSecurity);
 
-			let args = {
-				resource: {
-					id,
-					type: 'imsi',
-				},
-			};
+			let args = { resource: { id, type: 'imsi' } };
 
 			client.query(args, function(err, result) {
 				if (err) {
-					res.render('error', {
-						header: 'ERROR WHEN QUERYING SUBSCRIPTION RESOURCE',
-						message: err.message,
-					});
+					console.log('-----------------------------------------------------------------------')
+					console.log(err)
+					console.log('-----------------------------------------------------------------------')					
+					res.status(500);
+					res.send(err.message);
 				} else {
 					subscriptionTraffic = result.traffic[0];
 
@@ -274,7 +228,6 @@ const getST = (res, deviceId, tags, id, type) => {
 						delete subscriptionTraffic[remove.SubscriptionTraffic[i]];
 					}
 					tags.subscriptionTraffic = subscriptionTraffic;
-					console.log('got subscription data');
 					updateTags(tags, res, deviceId, type);
 				}
 			});
@@ -288,86 +241,92 @@ const router = express.Router();
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-	res.render('index');
+	res.status(200);
+	res.send('ok');
 });
 
-router.get('/imsi', function(req, res, next) {
-	res.render('imsi');
-});
+//
+// IMSI PROVISIONING
+//
+router.post('/device/:deviceId', function(req, res, next) {
+	let deviceId = req.params.deviceId;
+	let found = getImsiForDevice(deviceId);
+	let ts = new Date();
 
-router.get('/tagsmgmt', function(req, res, next) {
-	res.render('tags');
-});
-
-router.get('/tags', function(req, res, next) {
-	let deviceId = req.query.deviceId;
-	let entry = getImsiForDevice(deviceId);
-
-	console.log(entry);
-
-	if (!entry) { // IMSI is not cached
-		res.render('error', {
-			header: 'ERROR WHEN FETCHING TAGS',
-			message: 'imsi not known',
-		});
-	} else {
-		if (entry.type == 'central') {
-			res.render('error', {
-				header: 'ERROR WHEN FETCHING TAGS',
-				message: 'Device is in IoT Central. Use IoT Central App to read tags',
-			});
-		} else {
-			readTags(res, deviceId);
-		}
-	}
-});
-
-router.post('/', function(req, res, next) {
-	let deviceId = req.body.deviceId;
-	if (!deviceId) {
-		res.send('need device id');
-	} else {
-		getIotaData(res, deviceId);
-	}
-});
-
-router.post('/imsi', function(req, res, next) {
-	let deviceId = req.body.deviceId;
-	if (!deviceId) {
-		res.send('need device id');
-	} else {
+	if (!found) {
+		// IMSI is not cached, cache it
+		console.log(`${ts}: provision ${deviceId} with ${req.body.imsi}`);
 		let type = req.body.type;
 		let imsi = req.body.imsi;
-		let subscriptionData = {
-			imsi,
-		}
-		console.log(subscriptionData);
+		let subscriptionData = { imsi };
+		let tags = { subscriptionData };
+		imsi_cache.push({ deviceId, imsi, type });
+		jsonfile.writeFile(fileName, imsi_cache, err => {
+			if (err) {
+				console.log('-----------------------------------------------------------------------')
+				console.log(err)
+				console.log('-----------------------------------------------------------------------')				
+				res.status(500);
+				res.send('file system error when updating cache');
+			} else {
+				updateTags(tags, res, deviceId, type); // write imsi on twin tag
+			}
+		});
+	} else {
+		console.log(`${ts}: device already provisioned`);
+		res.status(403);
+		res.send('device already provisioned');
+	}
+});
 
-		let tags = {
-			subscriptionData
-		};
+router.delete('/device/:deviceId', function(req, res, next) {
+	let deviceId = req.params.deviceId;
+	let found = getImsiForDevice(deviceId);
 
-		let found = getImsiForDevice(deviceId);
+	if (!found) {
+		// IMSI is not cached
+		res.status(404);
+		res.send('device not yet provisioned');
+	} else {
+		let index = imsi_cache.indexOf(found);
+		imsi_cache.splice(index, 1);
+		jsonfile.writeFile(fileName, imsi_cache, err => {
+			if (err) {
+				console.log('-----------------------------------------------------------------------')
+				console.log(err)
+				console.log('-----------------------------------------------------------------------')				
+				res.status(500);
+				res.send('file system error when updating cache');
+			} else {
+				let subscriptionData = {
+					imsi,
+				};
+				let tags = {
+					subscriptionData,
+				};
+				imsi_cache.push({
+					deviceId,
+					imsi: null,
+					type,
+				});
+				updateTags(tags, res, deviceId, type); // remove imsi from twin tag
+			}
+		});
+	}
+});
 
-		if (!found) { // IMSI is not cached
-			imsi_cache.push({
-				deviceId,
-				imsi,
-				type
-			});
-			jsonfile.writeFile(fileName, imsi_cache, err => {
-				if (err) {
-					res.render('error', {
-						header: 'ERROR WHEN SAVING IMSI TO CACHE',
-						message: err.message,
-					});
-				} else {
-					updateTags(tags, res, deviceId, type);
-				}
-			});
-		} else {
-			updateTags(tags, res, deviceId, type);
-		}
+//
+// TAGS PROVISIONING
+//
+router.post('/tags/:deviceId', function(req, res, next) {
+	let deviceId = req.params.deviceId;
+	let found = getImsiForDevice(deviceId);
+
+	if (!found) {	// IMSI is not cached
+		res.status(404);
+		res.send('device not yet provisioned');
+	} else {
+		getIotaData(res, deviceId, found.imsi, found.type);
 	}
 });
 
