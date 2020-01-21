@@ -316,7 +316,13 @@ router.post('/tags/:deviceId', function(req, res, next) {
 		res.status(404);
 		res.send('device not yet provisioned');
 	} else {
-		getIotaData(res, deviceId, found.imsi, found.type);
+		if (found.type != 'hub') {
+			res.status(403);
+			res.send('operation only valid for IoT Hub devices');
+		} else {
+			console.log(`Will fetch tags for IoT Hub device: ${deviceId}`);
+			getIotaData(res, deviceId, found.imsi, found.type);
+		}
 	}
 });
 
