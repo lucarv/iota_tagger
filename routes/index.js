@@ -46,7 +46,7 @@ const updateTags = (tags, res, deviceId, type) => {
 				res.send('device not provisioned in iot hub');
 			} else {
 				let twinPatch = {
-					tags,
+					tags
 				};
 				twin.update(twinPatch, function(err, twin) {
 					if (err) {
@@ -316,14 +316,8 @@ router.post('/tags/:deviceId', function(req, res, next) {
 		res.status(404);
 		res.send('device not yet provisioned');
 	} else {
-		if (found.type != 'hub') {
-			res.status(403);
-			res.send('operation only valid for IoT Hub devices');
-		} else {
-			console.log(`Will fetch tags for IoT Hub device: ${deviceId}`);
 			getIotaData(res, deviceId, found.imsi, found.type);
 		}
-	}
 });
 
 module.exports = router;
